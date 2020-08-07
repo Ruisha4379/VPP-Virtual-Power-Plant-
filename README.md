@@ -3,6 +3,5 @@
 ### Author: Sai Wei
 ### Date: 07 Aug 2020
 ### The content includes the definition and function of VPP; the control platform of VPP; review of algorithms.
-![VPP_Statkraft](https://user-images.githubusercontent.com/43809989/89611371-a22dac00-d8af-11ea-9b54-bd5a556b8764.jpg)
-(Note: image is from Statkraft)
+![VPP_definition](https://user-images.githubusercontent.com/43809989/89614412-f5572d00-d8b6-11ea-8e1b-b53b2f49f765.jpg)
 
