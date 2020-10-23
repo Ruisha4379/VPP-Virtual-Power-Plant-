@@ -1,0 +1,202 @@
+import os, glob
+import numpy as np
+import pandas as pd
+
+df_history = pd.read_csv("C:/Users/Lenovo/.csv", low_memory=False)
+df_24hr = pd.read_csv("C:/Users/Lenovo/.csv")
+
+df_24hr = df_24hr.drop(['TCL(MW)','LCP($/MWh)','Secondary($/MWh)','Last Updated', 'EHEUR($/MWh)',
+                        'Regulation($/MWh)', 'Primary($/MWh)', 'Contingency($/MWh)'], axis =1)
+                        
+df_24hr['USEP_pre1'] = df_24hr['USEP($/MWh)'].shift(periods = 1,  axis=0, fill_value=None)
+df_24hr['USEP_pre2'] = df_24hr['USEP($/MWh)'].shift(periods = 2,  axis=0, fill_value=None)
+df_24hr['USEP_pre3'] = df_24hr['USEP($/MWh)'].shift(periods = 3,  axis=0, fill_value=None)
+df_24hr['DEMAND_pre1'] = df_24hr['Demand(MW)'].shift(periods = 1,  axis=0, fill_value=None)
+df_24hr['DEMAND_pre2'] = df_24hr['Demand(MW)'].shift(periods = 2,  axis=0, fill_value=None)
+df_24hr['DEMAND_pre3'] = df_24hr['Demand(MW)'].shift(periods = 3,  axis=0, fill_value=None)
+
+import datetime
+time_range = '00:00-00:30' 
+date = '2020-08-21'
+df_24hr['Date'] = pd.to_datetime(df_24hr.Date)
+df_24hr['Date'] = df_24hr['Date'].dt.strftime('%Y-%m-%d')
+
+mask_24hr =  (df_24hr['Date'] == date) & (df_24hr['Period'] == time_range)
+locate_index = df_24hr.loc[mask_24hr].index.values.astype(int)[0]
+df_24hr = df_24hr.iloc[locate_index:, :]
+
+time_duration = 24
+time_duration = int(time_duration)
+date_bgn = '2020-08-21'
+date_end = '2020-08-21'
+
+mask_history = (df_history['DATE'] >= '2015-01-03') & (df_history['DATE'] <= '2020-08-31')
+df_history = df_history.loc[mask_history]
+
+from sklearn.preprocessing import MinMaxScaler
+
+sc_X_1 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['Daily_Rainfall_Total(mm)']])
+sc_X_2 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['Mean_T(DegreeC)']])
+sc_X_3 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['USEP_DA']])
+sc_X_4 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['USEP_DA_pre']])
+sc_X_5 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['USEP_avg']])
+sc_X_6 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['DEMAND_DA_pre']])
+sc_X_7 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['USEP_DA_diff']])
+sc_X_8 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['DEMAND_DA_diff']])
+
+sc_X_9 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['USEP_pre1']])
+sc_X_10 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['USEP_pre2']])
+sc_X_11 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['USEP_pre3']])
+sc_X_12 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['DEMAND_pre1']])
+sc_X_13 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['DEMAND_pre2']])
+sc_X_14 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['DEMAND_pre3']])
+
+sc_X_15 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['Spot']])
+sc_X_16 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['Future_1']])
+sc_X_17 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['Future_2']])
+sc_X_18 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['Future_3']])
+sc_X_19 = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['Future_4']])
+
+sc_Y = MinMaxScaler(feature_range = (0, 1)).fit(df_history[['USEP ($/MWh)']])
+
+df_history['Daily_Rainfall_Total(mm)'] = sc_X_1.transform(df_history.loc[:,('Daily_Rainfall_Total(mm)')].values.reshape((len(df_history),1)))
+df_history['Mean_T(DegreeC)'] = sc_X_2.transform(df_history.loc[:,('Mean_T(DegreeC)')].values.reshape((len(df_history),1)))
+df_history['USEP_DA'] = sc_X_3.transform(df_history.loc[:,('USEP_DA')].values.reshape((len(df_history),1)))
+df_history['USEP_DA_pre'] = sc_X_4.transform(df_history.loc[:,('USEP_DA_pre')].values.reshape((len(df_history),1)))
+df_history['USEP_avg'] = sc_X_5.transform(df_history.loc[:,('USEP_avg')].values.reshape((len(df_history),1)))
+df_history['DEMAND_DA_pre'] = sc_X_6.transform(df_history.loc[:,('DEMAND_DA_pre')].values.reshape((len(df_history),1)))
+df_history['USEP_DA_diff'] = sc_X_7.transform(df_history.loc[:,('USEP_DA_diff')].values.reshape((len(df_history),1)))
+df_history['DEMAND_DA_diff'] = sc_X_8.transform(df_history.loc[:,('DEMAND_DA_diff')].values.reshape((len(df_history),1)))
+
+df_history['USEP_pre1'] = sc_X_9.transform(df_history.loc[:,('USEP_pre1')].values.reshape((len(df_history),1)))
+df_history['USEP_pre2'] = sc_X_10.transform(df_history.loc[:,('USEP_pre2')].values.reshape((len(df_history),1)))
+df_history['USEP_pre3'] = sc_X_11.transform(df_history.loc[:,('USEP_pre3')].values.reshape((len(df_history),1)))
+
+df_history['DEMAND_pre1'] = sc_X_12.transform(df_history.loc[:,('DEMAND_pre1')].values.reshape((len(df_history),1)))
+df_history['DEMAND_pre2'] = sc_X_13.transform(df_history.loc[:,('DEMAND_pre2')].values.reshape((len(df_history),1)))
+df_history['DEMAND_pre3'] = sc_X_14.transform(df_history.loc[:,('DEMAND_pre3')].values.reshape((len(df_history),1)))
+
+df_history['Spot'] = sc_X_15.transform(df_history.loc[:,('Spot')].values.reshape((len(df_history),1)))
+df_history['Future_1'] = sc_X_16.transform(df_history.loc[:,('Future_1')].values.reshape((len(df_history),1)))
+df_history['Future_2'] = sc_X_17.transform(df_history.loc[:,('Future_2')].values.reshape((len(df_history),1)))
+df_history['Future_3'] = sc_X_18.transform(df_history.loc[:,('Future_3')].values.reshape((len(df_history),1)))
+df_history['Future_4'] = sc_X_19.transform(df_history.loc[:,('Future_4')].values.reshape((len(df_history),1)))
+
+df_history['USEP ($/MWh)'] = sc_Y.transform(df_history.loc[:,('USEP ($/MWh)')].values.reshape((len(df_history),1)))
+
+df_24hr['USEP_pre1'] = sc_X_9.transform(df_24hr.loc[:,('USEP_pre1')].values.reshape((len(df_24hr),1)))
+df_24hr['USEP_pre2'] = sc_X_10.transform(df_24hr.loc[:,('USEP_pre2')].values.reshape((len(df_24hr),1)))
+df_24hr['USEP_pre3'] = sc_X_11.transform(df_24hr.loc[:,('USEP_pre3')].values.reshape((len(df_24hr),1)))
+df_24hr['DEMAND_pre1'] = sc_X_12.transform(df_24hr.loc[:,('DEMAND_pre1')].values.reshape((len(df_24hr),1)))
+df_24hr['DEMAND_pre2'] = sc_X_13.transform(df_24hr.loc[:,('DEMAND_pre2')].values.reshape((len(df_24hr),1)))
+df_24hr['DEMAND_pre3'] = sc_X_14.transform(df_24hr.loc[:,('DEMAND_pre3')].values.reshape((len(df_24hr),1)))
+
+df_history = pd.get_dummies(df_history, columns=['PERIOD','year','month','day'])
+df_test = df_history.loc[(df_history['DATE'] >= date_bgn) & (df_history['DATE'] <= date_end)]
+df_test_pres = df_test[['USEP_pre1', 'USEP_pre2', 'USEP_pre3', 'DEMAND_pre1', 'DEMAND_pre2', 'DEMAND_pre3']].reset_index(drop=True)
+df_24hr_pres = df_24hr[['USEP_pre1', 'USEP_pre2', 'USEP_pre3', 'DEMAND_pre1', 'DEMAND_pre2', 'DEMAND_pre3']].reset_index(drop=True)
+df_test = df_test.drop(['USEP_pre1', 'USEP_pre2', 'USEP_pre3', 'DEMAND_pre1', 'DEMAND_pre2', 'DEMAND_pre3'], axis =1).reset_index(drop=True)
+df_test = pd.concat([df_test, df_24hr_pres], axis =1)
+
+from datetime import datetime, date, timedelta
+
+todays_date = '2020-08-20'
+n_days_ago = 5 
+
+def str_to_date(str):
+
+    year, month, day = map(int, str.split("-"))
+    return date(year, month, day)
+
+date_N_days_ago = str_to_date(todays_date) -timedelta(days=n_days_ago)
+date_N_days_ago =date_N_days_ago.strftime("%Y-%m-%d")
+
+df_val = df_history.loc[(df_history['DATE'] >= date_N_days_ago) & (df_history['DATE'] < date_bgn )]
+df_train = df_history.loc[(df_history['DATE'] < date_N_days_ago)]
+USEP_actual = df_test['USEP ($/MWh)'].values.reshape((len(df_test),1))
+USEP_actual = sc_Y.inverse_transform(USEP_actual)
+
+from statsmodels.api import add_constant
+from sklearn.model_selection import train_test_split
+
+X_ttrain = df_train.drop(['DATE','USEP ($/MWh)','DEMAND (MW)','$/MBtu', 'RNGC1 ($/MBtu)', 
+                          'RNGC2 ($/MBtu)', 'RNGC3 ($/MBtu)', 'RNGC4 ($/MBtu)'], axis=1) #,'Spot','Future_1' , 'year', 'month'
+Y_ttrain = df_train['USEP ($/MWh)']
+X_val = df_val.drop(['DATE','USEP ($/MWh)','DEMAND (MW)','$/MBtu', 'RNGC1 ($/MBtu)', 'RNGC2 ($/MBtu)',
+                     'RNGC3 ($/MBtu)', 'RNGC4 ($/MBtu)'], axis=1) #,'Spot','Future_1' ,'year', 'month'
+Y_val = df_val['USEP ($/MWh)']
+X_ttest = df_test.drop(['DATE','USEP ($/MWh)','DEMAND (MW)','$/MBtu', 'RNGC1 ($/MBtu)', 'RNGC2 ($/MBtu)',
+                        'RNGC3 ($/MBtu)', 'RNGC4 ($/MBtu)'], axis=1) #,'Spot','Future_1' , 'year', 'month'
+Y_ttest = df_test['USEP ($/MWh)']
+
+x_train = X_ttrain.values.reshape((len(X_ttrain),len(X_ttrain.columns)))
+y_train = Y_ttrain.values.reshape((len(Y_ttrain),1))
+x_val = X_val.values.reshape((len(X_val),len(X_val.columns)))
+y_val = Y_val.values.reshape((len(Y_val),1))
+x_pred = X_ttest.values.reshape((len(X_ttest),len(X_ttest.columns)))
+y_pred = Y_ttest.values.reshape((len(Y_ttest),1))
+
+X_train,X_test,y_train,y_test=train_test_split(x_train,y_train,test_size=0.2,random_state=None) 
+import xgboost as xgb
+from xgboost import XGBRegressor
+model_xgb = xgb.XGBRegressor(objective ='reg:squarederror',colsample_bylevel=1, gamma=0,
+       learning_rate=0.09, max_depth=5, min_child_weight=1, n_estimators=800, 
+       reg_alpha=0.0000001, reg_lambda=7,subsample=1, seed=42)
+        
+model_xgb.fit(X_train, y_train)
+
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
+rcParams['font.family'] = 'Times New Roman'
+from matplotlib.pyplot import figure
+from xgboost import plot_importance
+plt.figure(figsize=(30,20), dpi=300)
+plt.barh(X_ttrain.columns, model_xgb.feature_importances_)
+#plt.show()
+# Validate the model
+y_val_xgb = model_xgb.predict(x_val) 
+y_val_xgb= y_val_xgb.reshape((len(y_val_xgb),1))
+y_val_xgb = sc_Y.inverse_transform(y_val_xgb)
+y_val = sc_Y.inverse_transform(y_val) #Actual value of the validation USEP prices
+df_compare = pd.DataFrame({'Actual USEP': y_val.flatten(), 'Predicted USEP':y_val_xgb.flatten()})
+#df_compare
+#Prediction of the USEP
+y_pred_xgb = model_xgb.predict(x_pred) 
+y_pred_xgb = y_pred_xgb.reshape((len(y_pred_xgb),1))
+y_pred_xgb = sc_Y.inverse_transform(y_pred_xgb)
+df_USEP_pred = pd.DataFrame({'Actual': USEP_actual.flatten(), 'Predicted':y_pred_xgb[0:len(df_test)].flatten()})
+
+from sklearn.metrics import accuracy_score, r2_score, mean_squared_error
+from sklearn import metrics
+
+def mean_absolute_percentage_error(y_test, y_pred): 
+    return np.mean(np.abs(np.divide(np.subtract(y_test,y_pred),y_test)))*100
+    
+print('MAPE for USEP validation:', mean_absolute_percentage_error( y_val, y_val_xgb))  
+print('MAPE for USEP vprediction:', mean_absolute_percentage_error( USEP_actual, y_pred_xgb)) 
+print('Mean Absolute Error for USEP validation:', metrics.mean_absolute_error(y_val, y_val_xgb)) 
+print('Mean Squared Error for USEP validation:', metrics.mean_squared_error(y_val, y_val_xgb))  
+print('Root Mean Squared Errorfor USEP validation :', np.sqrt(metrics.mean_squared_error(y_val, y_val_xgb)))
+print('Mean Absolute Error for USEP prediction:', metrics.mean_absolute_error(USEP_actual, y_pred_xgb)) 
+print('Mean Squared Error for USEP prediction:', metrics.mean_squared_error(USEP_actual, y_pred_xgb))  
+print('Root Mean Squared Errorfor USEP prediction :', np.sqrt(metrics.mean_squared_error(USEP_actual, y_pred_xgb)))
+
+#Visualize the predicted USEP and the actual USEP
+df0 = df_compare.head(2000)
+df0.plot(kind='line',figsize=(20,10),color=('orange','blue'), linewidth=4, linestyle='-')# 
+plt.xlabel('Time Periods', fontsize=24)
+plt.ylabel('Elelctricity Price USEP ($/MWh)', fontsize=24)
+plt.legend(loc='upper right',fontsize=20)
+plt.grid(True)
+#plt.show()
+
+df1 = df_USEP_pred.head(2000)
+df1.plot(kind='line',figsize=(20,10),color=('orange','blue'), linewidth=4, linestyle='-')# 
+plt.xlabel('Time Periods', fontsize=24)
+plt.ylabel('Elelctricity Price USEP ($/MWh)', fontsize=24)
+plt.tick_params(axis='both', which='major', labelsize=20)
+plt.tick_params(axis='both', which='minor', labelsize=20)
+plt.legend(loc='upper right',fontsize=20)
+plt.grid(True)
+#plt.show()
